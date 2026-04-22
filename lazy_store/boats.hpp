@@ -12,4 +12,8 @@ const std::string GREEN   = "\x1b[32m";
 const std::string RED     = "\x1b[31m";
 const std::string BG_BLUE = "\x1b[44m";
 
+const std::string HIT  = "H";
+const std::string MISS = "M";
+const std::string SUNK = "S";
+
 #endif
