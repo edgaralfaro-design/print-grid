@@ -49,6 +49,7 @@ void save_full_game(std::string your_board[SIZE][SIZE], std::string enemy_board[
         }
     }
 }
+
 void save_single_cell(int board_offset, int row, int col, char value) {
     std::fstream file("battleship.sav", std::ios::binary | std::ios::in | std::ios::out);
     if (!file) {
@@ -78,6 +79,33 @@ int count_cells_with_value(std::string grid[SIZE][SIZE], const std::string& valu
         }
     }
     return count;
+}
+
+bool is_valid_enemy_coord(const std::string& coord) {
+    int row, col;
+    return parse_position(coord, row, col);
+}
+
+bool player_has_won(std::string enemy_board[SIZE][SIZE]) {
+    for (int r = 0; r < SIZE; r++) {
+        for (int c = 0; c < SIZE; c++) {
+            if (enemy_board[r][c] == "  ") {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool player_has_lost(std::string your_board[SIZE][SIZE]) {
+    for (int r = 0; r < SIZE; r++) {
+        for (int c = 0; c < SIZE; c++) {
+            if (your_board[r][c] == "[]") {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 int start_game(int argc, char* argv[]) {
@@ -184,51 +212,97 @@ int start_game(int argc, char* argv[]) {
             }
         }
     }
-save_full_game(your_board, enemy_board);
 
-std::cout << "Done with board setup\n";
-std::cout << "Let the Games Begin!\n";
+    save_full_game(your_board, enemy_board);
 
-while (true) {
-    print_grid("Your Fleet", YELLOW, your_board);
-    print_grid("Enemy Waters", RED, enemy_board);
+    std::cout << "Done with board setup\n";
+    std::cout << "Let the Games Begin!\n";
 
-    std::string coord;
-    std::string result;
+    while (true) {
+        // Player turn
+        while (true) {
+            print_grid("Your Fleet", YELLOW, your_board);
+            print_grid("Enemy Waters", RED, enemy_board);
 
-    std::cout << "Your turn! Enter your shot (expected: A1 H/M/S):\n";
-    std::cin >> coord >> result;
+            std::string coord;
+            std::string result;
 
-    int row, col;
-    if (!parse_position(coord, row, col) || !is_valid_shot_result(result)) {
-        std::cout << "Invalid input. Format: A1 H\n";
-        continue;
+            std::cout << "Your turn! Enter your shot (expected: A1 H/M/S):\n";
+            std::cin >> coord >> result;
+
+            int row, col;
+            if (!parse_position(coord, row, col) || !is_valid_shot_result(result)) {
+                std::cout << "Invalid input. Format: A1 H\n";
+                continue;
+            }
+
+            if (is_already_shot(enemy_board[row][col])) {
+                std::cout << "You already fired at this location\n";
+                continue;
+            }
+
+            if (result == "M") {
+                enemy_board[row][col] = MISS;
+                save_single_cell(ENEMY_BOARD_OFFSET, row, col, 'M');
+                std::cout << "You shot at " << coord << ": MISS!\n";
+            } else if (result == "H") {
+                enemy_board[row][col] = HIT;
+                save_single_cell(ENEMY_BOARD_OFFSET, row, col, 'H');
+                std::cout << "You shot at " << coord << ": HIT!\n";
+            } else {
+                enemy_board[row][col] = SUNK;
+                save_single_cell(ENEMY_BOARD_OFFSET, row, col, 'S');
+                std::cout << "You shot at " << coord << ": SUNK!\n";
+            }
+
+            if (player_has_won(enemy_board)) {
+                std::cout << "You sunk all enemy ships. YOU WIN!\n";
+                return 0;
+            }
+
+            break;
+        }
+
+        // Enemy turn
+        while (true) {
+            print_grid("Your Fleet", YELLOW, your_board);
+
+            std::string coord;
+            std::cout << "Enemy's turn! Enter enemy shot (expected: A1):\n";
+            std::cin >> coord;
+
+            int row, col;
+            if (!parse_position(coord, row, col)) {
+                std::cout << "Invalid input. Expected format: A1\n";
+                continue;
+            }
+
+            if (is_already_shot(your_board[row][col])) {
+                std::cout << "Enemy already fired at this location\n";
+                continue;
+            }
+
+            if (your_board[row][col] == "[]") {
+                your_board[row][col] = HIT;
+                save_single_cell(PLAYER_BOARD_OFFSET, row, col, 'H');
+                std::cout << "Enemy shot at " << coord << ": HIT!\n";
+            } else {
+                your_board[row][col] = MISS;
+                save_single_cell(PLAYER_BOARD_OFFSET, row, col, 'M');
+                std::cout << "Enemy shot at " << coord << ": MISS!\n";
+            }
+
+            if (player_has_lost(your_board)) {
+                std::cout << "All your ships have been sunk. YOU LOST!\n";
+                return 0;
+            }
+
+            break;
+        }
+
+        print_grid("Your Fleet", YELLOW, your_board);
+        print_grid("Enemy Waters", RED, enemy_board);
     }
 
-    if (is_already_shot(enemy_board[row][col])) {
-        std::cout << "You already fired at this location\n";
-        continue;
-    }
-
-    if (result == "M") {
-        enemy_board[row][col] = MISS;
-        save_single_cell(ENEMY_BOARD_OFFSET, row, col, 'M');
-        std::cout << "You shot at " << coord << ": MISS!\n";
-    } else if (result == "H") {
-        enemy_board[row][col] = HIT;
-        save_single_cell(ENEMY_BOARD_OFFSET, row, col, 'H');
-        std::cout << "You shot at " << coord << ": HIT!\n";
-    } else {
-        enemy_board[row][col] = SUNK;
-        save_single_cell(ENEMY_BOARD_OFFSET, row, col, 'S');
-        std::cout << "You shot at " << coord << ": SUNK!\n";
-    }
-
-    break;
-}
-
-print_grid("Your Fleet", YELLOW, your_board);
-print_grid("Enemy Waters", RED, enemy_board);
-
-return 0;
+    return 0;
 }
