@@ -7,6 +7,8 @@
 #include "battleship.hpp"
 
 const uint32_t MAGIC = 0x00BA7713;
+const int PLAYER_BOARD_OFFSET = 4;
+const int ENEMY_BOARD_OFFSET = 104;
 
 char encode_player_cell(const std::string& cell) {
     if (cell == "  ") return ' ';
@@ -46,6 +48,16 @@ void save_full_game(std::string your_board[SIZE][SIZE], std::string enemy_board[
             file.write(&ch, 1);
         }
     }
+}
+void save_single_cell(int board_offset, int row, int col, char value) {
+    std::fstream file("battleship.sav", std::ios::binary | std::ios::in | std::ios::out);
+    if (!file) {
+        return;
+    }
+
+    int offset = board_offset + (row * SIZE) + col;
+    file.seekp(offset);
+    file.write(&value, 1);
 }
 
 int start_game(int argc, char* argv[]) {
@@ -153,6 +165,7 @@ int start_game(int argc, char* argv[]) {
         }
     }
 save_full_game(your_board, enemy_board);
+
 
     std::cout << "Done with board setup\n";
     std::cout << "Let the Games Begin!\n";

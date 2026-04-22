@@ -18,4 +18,5 @@ void randomly_place_all_boats(std::string grid[SIZE][SIZE]);
 char encode_player_cell(const std::string& cell);
 char encode_enemy_cell(const std::string& cell);
 void save_full_game(std::string your_board[SIZE][SIZE], std::string enemy_board[SIZE][SIZE]);
+void save_single_cell(int board_offset, int row, int col, char value);
 #endif
